@@ -1,4 +1,4 @@
-import { Palette, Music, Camera, Theater, Award, Users } from 'lucide-react'
+import { Palette, Music, Camera, Users, Award } from 'lucide-react'
 
 const Arts = () => {
   return (

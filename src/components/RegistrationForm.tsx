@@ -6,6 +6,36 @@ import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import PreviewModal from './PreviewModal';
 
+interface PlayerForm {
+  name: string;
+  whatsapp: string;
+  position: string;
+  number: number;
+  age: number;
+  address: string;
+  jersey_photo?: FileList;
+  ktp?: FileList;
+  additional_doc?: FileList;
+}
+
+interface OfficialForm {
+  name: string;
+  whatsapp: string;
+  selfie?: FileList;
+  ktp?: FileList;
+}
+
+interface RegistrationFormData {
+  teamName: string;
+  teamAddress: string;
+  primaryJersey: string;
+  secondaryJersey: string;
+  manager: OfficialForm;
+  official1: OfficialForm;
+  official2: OfficialForm;
+  players: PlayerForm[];
+}
+
 const TEAM_NAMES = [
   'ARUMBA FC A', 'ARUMBA FC B', 'ARUMBA FC C',
   'BALLPASS FC A', 'BALLPASS FC B', 'BALLPASS FC C',
@@ -31,13 +61,13 @@ const PLAYER_POSITIONS = [
 
 const RegistrationForm = () => {
   const [showPreview, setShowPreview] = useState(false);
-  const [formData, setFormData] = useState<any>(null);
+  const [formData, setFormData] = useState<RegistrationFormData | null>(null);
   const [submitStatus, setSubmitStatus] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { register, control, handleSubmit, formState: { errors } } = useForm({
+  const { register, control, handleSubmit } = useForm<RegistrationFormData>({
     defaultValues: {
-      players: [{}]
+      players: [{}] as Partial<PlayerForm>[]
     }
   });
 
@@ -70,16 +100,17 @@ const RegistrationForm = () => {
     }
   };
 
-  const handlePreview = async (data: any) => {
+  const handlePreview = async (data: RegistrationFormData) => {
     setFormData(data);
     setShowPreview(true);
   };
 
   const handleConfirmSubmit = async () => {
+    if (!formData) return;
+
     try {
       setIsSubmitting(true);
       
-      // Upload manager images
       const managerData = { ...formData.manager };
       if (managerData.selfie?.[0]) {
         managerData.selfieUrl = await uploadImage(managerData.selfie[0], 'manager/selfie');
@@ -88,10 +119,9 @@ const RegistrationForm = () => {
         managerData.ktpUrl = await uploadImage(managerData.ktp[0], 'manager/ktp');
       }
 
-      // Upload officials images
       const officials: any = {};
       for (const role of ['official1', 'official2']) {
-        const officialData = { ...formData[role] };
+        const officialData = { ...formData[role as keyof RegistrationFormData] as OfficialForm };
         if (officialData.selfie?.[0]) {
           officialData.selfieUrl = await uploadImage(officialData.selfie[0], `${role}/selfie`);
         }
@@ -101,8 +131,7 @@ const RegistrationForm = () => {
         officials[role] = officialData;
       }
 
-      // Upload players images
-      const players = await Promise.all(formData.players.map(async (player: any, index: number) => {
+      const players = await Promise.all(formData.players.map(async (player, index) => {
         const playerData = { ...player };
         if (playerData.jersey_photo?.[0]) {
           playerData.jerseyPhotoUrl = await uploadImage(playerData.jersey_photo[0], `players/${index}/jersey`);
@@ -116,7 +145,6 @@ const RegistrationForm = () => {
         return playerData;
       }));
 
-      // Prepare final data for Firestore
       const registrationData = {
         teamName: formData.teamName,
         teamAddress: formData.teamAddress,
@@ -130,7 +158,6 @@ const RegistrationForm = () => {
         submittedAt: new Date(),
       };
 
-      // Save to Firestore
       const docRef = await addDoc(collection(db, 'registrations'), registrationData);
       
       setSubmitStatus(`Pendaftaran berhasil! ID: ${docRef.id}`);
@@ -143,7 +170,7 @@ const RegistrationForm = () => {
     }
   };
 
-  const renderPersonFields = (prefix: string, label: string, icon: JSX.Element) => (
+  const renderPersonFields = (prefix: 'manager' | 'official1' | 'official2', label: string, icon: JSX.Element) => (
     <div className="space-y-4 p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-emerald-500">
       <div className="flex items-center gap-3 mb-4">
         {icon}
@@ -154,7 +181,7 @@ const RegistrationForm = () => {
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">Nama Lengkap</label>
           <input
-            {...register(`${prefix}.name` as any, { required: "Nama wajib diisi" })}
+            {...register(`${prefix}.name`, { required: "Nama wajib diisi" })}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
             placeholder="Masukkan nama lengkap"
           />
@@ -163,7 +190,7 @@ const RegistrationForm = () => {
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">Nomor WhatsApp</label>
           <input
-            {...register(`${prefix}.whatsapp` as any, {
+            {...register(`${prefix}.whatsapp`, {
               required: "Nomor WhatsApp wajib diisi",
               validate: validateWhatsApp
             })}
@@ -181,7 +208,7 @@ const RegistrationForm = () => {
             <input
               type="file"
               accept="image/*"
-              {...register(`${prefix}.selfie` as any, { validate: validateFile })}
+              {...register(`${prefix}.selfie`, { validate: validateFile })}
               className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
             />
           </div>
@@ -194,7 +221,7 @@ const RegistrationForm = () => {
             <input
               type="file"
               accept="image/*"
-              {...register(`${prefix}.ktp` as any, { validate: validateFile })}
+              {...register(`${prefix}.ktp`, { validate: validateFile })}
               className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
             />
           </div>
