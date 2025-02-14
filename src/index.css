@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --pitch-green: #2E7D32;
+  --grass-light: #4CAF50;
+  --field-white: #F5F5F5;
+  --goal-gold: #FFD700;
+  --art-violet: #9C27B0;
+  --art-indigo: #3F51B5;
+  --art-rose: #E91E63;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.pitch-gradient {
+  background: linear-gradient(135deg, var(--pitch-green) 0%, var(--grass-light) 100%);
+}
+
+.art-gradient {
+  background: linear-gradient(135deg, var(--art-violet) 0%, var(--art-rose) 100%);
+}
+
+.hover-scale {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.champion-card {
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: white;
+  position: relative;
+}
+
+.champion-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--goal-gold);
+}
+
+.champion-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+.pulse-animation {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.trophy-glow {
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+}
+
+.field-pattern {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
